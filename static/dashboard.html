@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Data Intelligence Dashboard for the JarNox</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 2px solid #e9ecef;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .stock-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .stock-item:hover {
+            transform: translateX(5px);
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stock-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .stock-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .stock-info {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .main-panel {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 2px solid #dee2e6;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Stock Data Intelligence Dashboard</h1>
+            <h2>For the JarNox By Rishabh</h2>
+            <p>Indian Stock Market Analysis</p>
+        </div>
+
+        <div class="content">
+            <div class="sidebar">
+                <h2>Available Stocks</h2>
+                <div id="stockList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading stocks...
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-panel">
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="periodSelect">Time Period</label>
+                        <select id="periodSelect">
+                            <option value="30">Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                            <option value="180">Last 6 Months</option>
+                            <option value="365">Last 1 Year</option>
+                        </select>
+                    </div>
+                    <button onclick="refreshData()">Refresh</button>
+                    <button onclick="showTopGainers()">Top Gainers</button>
+                    <button onclick="showTopLosers()">Top Losers</button>
+                </div>
+
+                <div class="stats" id="statsCards"></div>
+                <div class="chart-container">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStock = null;
+        let chartInstance = null;
+
+        async function loadStocks() {
+            try {
+                const response = await fetch("/companies");
+                const stocks = await response.json();
+                const stockList = document.getElementById("stockList");
+                stockList.innerHTML = "";
+
+                stocks.forEach((stock, index) => {
+                    const stockItem = document.createElement("div");
+                    stockItem.className = "stock-item";
+                    stockItem.innerHTML = `
+                        <div class="stock-name">${stock.symbol}</div>
+                        <div class="stock-info">${stock.data_points} data points</div>
+                    `;
+                    stockItem.onclick = () => selectStock(stock.symbol, stockItem);
+                    stockList.appendChild(stockItem);
+
+                    if (index === 0) {
+                        selectStock(stock.symbol, stockItem);
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading stocks:", error);
+                document.getElementById("stockList").innerHTML =
+                    '<p style="color: red;">Error loading stocks. Make sure the server is running.</p>';
+            }
+        }
+
+        async function selectStock(symbol, selectedElement) {
+            currentStock = symbol;
+            document.querySelectorAll(".stock-item").forEach(item => item.classList.remove("active"));
+
+            if (selectedElement) {
+                selectedElement.classList.add("active");
+            }
+
+            await loadStockData(symbol);
+        }
+
+        async function loadStockData(symbol) {
+            try {
+                const days = document.getElementById("periodSelect").value;
+                const response = await fetch(`/stocks/${symbol}?days=${days}`);
+                const result = await response.json();
+                updateStats(result.data);
+                updateChart(result.data, symbol);
+            } catch (error) {
+                console.error("Error loading stock data:", error);
+                alert("Error loading stock data.");
+            }
+        }
+
+        function updateStats(data) {
+            if (!data || data.length === 0) {
+                return;
+            }
+
+            const latest = data[data.length - 1];
+            const validReturns = data.filter(item => item.daily_return !== null);
+            const avgReturn = validReturns.length
+                ? validReturns.reduce((sum, item) => sum + item.daily_return, 0) / validReturns.length
+                : 0;
+
+            document.getElementById("statsCards").innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Latest Close</div>
+                    <div class="stat-value">Rs ${latest.close.toFixed(2)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Daily Return</div>
+                    <div class="stat-value">${avgReturn.toFixed(2)}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">52-Week High</div>
+                    <div class="stat-value">Rs ${(latest.week_52_high || 0).toFixed(2)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Volatility</div>
+                    <div class="stat-value">${(latest.volatility || 0).toFixed(2)}</div>
+                </div>
+            `;
+        }
+
+        function updateChart(data, symbol) {
+            const dates = data.map(item => item.date);
+            const closes = data.map(item => item.close);
+            const ma7 = data.map(item => item.ma_7);
+            const ctx = document.getElementById("stockChart").getContext("2d");
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: "Close Price",
+                            data: closes,
+                            borderColor: "#667eea",
+                            backgroundColor: "rgba(102, 126, 234, 0.1)",
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: "7-Day MA",
+                            data: ma7,
+                            borderColor: "#f093fb",
+                            borderWidth: 2,
+                            fill: false,
+                            borderDash: [5, 5]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${symbol} - Stock Price History`,
+                            font: { size: 18 }
+                        },
+                        legend: {
+                            display: true,
+                            position: "top"
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: "Price (Rs)"
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Date"
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function refreshData() {
+            if (currentStock) {
+                loadStockData(currentStock);
+            }
+        }
+
+        async function showTopGainers() {
+            try {
+                const response = await fetch("/stocks/top-gainers?limit=5");
+                const gainers = await response.json();
+
+                let message = "TOP GAINERS:\n\n";
+                gainers.forEach((stock, index) => {
+                    message += `${index + 1}. ${stock.symbol}\n`;
+                    message += `   Return: ${stock.daily_return}%\n`;
+                    message += `   Price: Rs ${stock.close}\n\n`;
+                });
+
+                alert(message);
+            } catch (error) {
+                console.error("Error fetching top gainers:", error);
+            }
+        }
+
+        async function showTopLosers() {
+            try {
+                const response = await fetch("/stocks/top-losers?limit=5");
+                const losers = await response.json();
+
+                let message = "TOP LOSERS:\n\n";
+                losers.forEach((stock, index) => {
+                    message += `${index + 1}. ${stock.symbol}\n`;
+                    message += `   Return: ${stock.daily_return}%\n`;
+                    message += `   Price: Rs ${stock.close}\n\n`;
+                });
+
+                alert(message);
+            } catch (error) {
+                console.error("Error fetching top losers:", error);
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", loadStocks);
+        document.getElementById("periodSelect").addEventListener("change", refreshData);
+    </script>
+</body>
+</html>

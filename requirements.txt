@@ -1,0 +1,13 @@
+# Python package requirements for the stock dashboard.
+# These are left unpinned so the project can install cleanly on newer Python versions.
+
+fastapi
+uvicorn
+sqlalchemy
+pandas
+yfinance
+requests
+python-multipart
+numpy
+matplotlib
+plotly
