@@ -292,7 +292,7 @@
         async function loadStockData(symbol) {
             try {
                 const days = document.getElementById("periodSelect").value;
-                const response = await fetch(`/stocks/${symbol}?days=${days}`);
+                const response = await fetch(`/stocks/${symbol}`);
                 const result = await response.json();
                 updateStats(result.data);
                 updateChart(result.data, symbol);
